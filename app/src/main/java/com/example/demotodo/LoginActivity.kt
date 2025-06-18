@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.MotionEvent
+import android.view.inputmethod.InputBinding
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
@@ -15,101 +16,84 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.ViewModelProvider
 import com.example.demotodo.DAO.UserDao
 import com.example.demotodo.data.AppDatabase
+import com.example.demotodo.databinding.ActivityLoginBinding
+import com.example.demotodo.manager.PreferenceManager
 import com.example.demotodo.model.Session
+import com.example.demotodo.reponsitory.UserRepository
+import com.example.demotodo.viewmodel.LoginViewModel
+import com.example.demotodo.viewmodel.LoginViewModelFactory
 
 class LoginActivity : AppCompatActivity() {
     private val DRAWABLE_END = 2
     private var showOffpass = false
     private lateinit var dao: UserDao
+    private lateinit var binding: ActivityLoginBinding
+    private lateinit var viewModel: LoginViewModel
 
     @SuppressLint("ClickableViewAccessibility", "UnsafeIntentLaunch")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_login)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         dao = AppDatabase.getDatabase(this).userDao()
-        val edtName = findViewById<EditText>(R.id.edt_name)
-        val edtPass = findViewById<EditText>(R.id.edt_pass)
-        val btnLogin = findViewById<AppCompatButton>(R.id.btn_login)
-        val tvRegister = findViewById<TextView>(R.id.tv_register)
-        val cbSave = findViewById<CheckBox>(R.id.cb_save)
-        val sharePre = getSharedPreferences("loginPre", MODE_PRIVATE)
-        val saveUsername = sharePre.getString("username", "")
-        val savePassword = sharePre.getString("password", "")
-        val isRemembered = sharePre.getBoolean("remember", false)
-        edtName.setText(saveUsername)
-        edtPass.setText(savePassword)
-        cbSave.isChecked = isRemembered
-        edtPass.setOnTouchListener { _, event ->
+        val repository = UserRepository(dao)
+        val prefs = PreferenceManager(this)
+        val factory = LoginViewModelFactory(repository, prefs)
+        viewModel = ViewModelProvider(this, factory)[LoginViewModel::class.java]
+        val username = binding.edtName.text.toString().trim()
+        val password = binding.edtPass.text.toString().trim()
+        val remember = binding.cbSave.isChecked
+        binding.edtPass.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                val drawableEnd = edtPass.compoundDrawables[DRAWABLE_END]
-                if (drawableEnd != null
-                    && event.rawX >= (edtPass.right - drawableEnd.bounds.width())
-                ) {
+                val drawableEnd = binding.edtPass.compoundDrawables[DRAWABLE_END]
+                if (drawableEnd != null && event.rawX >= (binding.edtPass.right - drawableEnd.bounds.width())) {
                     showOffpass = !showOffpass
-                    showOnPass(edtPass)
-                    edtPass.setSelection(edtPass.text.length)
+                    showOnPass()
+                    binding.edtPass.setSelection(binding.edtPass.text.length)
                     return@setOnTouchListener true
                 }
             }
-            false
+            return@setOnTouchListener false
         }
-        btnLogin.setOnClickListener {
-            val username = edtName.text.toString()
-            val password = edtPass.text.toString()
-            if (username.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Không để trống", Toast.LENGTH_SHORT).show()
+        binding.btnLogin.setOnClickListener {
+            val  username = binding.edtName.text.toString().trim()
+            val password = binding.edtPass.text.toString().trim()
+            val remember = binding.cbSave.isChecked
+            viewModel.login(username,password,remember)
+        }
+        viewModel.loginResult.observe(this) { user ->
+            if (user != null) {
+                Toast.makeText(this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show()
+                Session.currentUserId = user.id
+                startActivity(Intent(this, TodoActivity::class.java))
             } else {
-                val user = dao.login(username, password)
-                if (user != null) {
-                    Session.currentUserId = user.id
-                    Toast.makeText(this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show()
-                    if (cbSave.isChecked) {
-                        with(sharePre.edit()) {
-                            putString("username", username)
-                            putString("password", password)
-                            putBoolean("remember", true)
-                            apply()
-                        }
-                    } else {
-                        with(sharePre.edit()) {
-                            clear()
-                            apply()
-                        }
-                    }
-                    intent = Intent(this, TodoActivity::class.java)
-                    startActivity(intent)
-                } else {
-                    Toast.makeText(this, "Thông tin sai", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show()
             }
         }
-        tvRegister.setOnClickListener {
-            intent = Intent(this, RegisterActivity::class.java)
-            startActivity(intent)
+
+        binding.tvRegister.setOnClickListener {
+            startActivity(Intent(this, RegisterActivity::class.java))
         }
     }
 
-    private fun showOnPass(edtPass: EditText) {
-        if (showOffpass) {
-            edtPass.inputType =
-                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-            edtPass.setCompoundDrawablesWithIntrinsicBounds(
-                null,
-                null,
-                ContextCompat.getDrawable(this, R.drawable.ic_eye_open),
-                null
-            )
+    private fun showOnPass() {
+        val drawable = if (showOffpass) {
+            R.drawable.ic_eye_open
         } else {
-            edtPass.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            edtPass.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                null,
-                null,
-                ContextCompat.getDrawable(this, R.drawable.ic_eye_close),
-                null
-            )
+            R.drawable.ic_eye_close
         }
+        binding.edtPass.inputType = if (showOffpass) {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        } else {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        binding.edtPass.setCompoundDrawablesWithIntrinsicBounds(
+            null, null, ContextCompat.getDrawable(this, drawable), null
+        )
     }
 }

@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 class ImagePagerAdapter(
     private val imageBytes: List<ByteArray>
 ) : RecyclerView.Adapter<ImagePagerAdapter.ImageViewHolder>() {
-    inner class ImageViewHolder(val imageView: ImageView) : RecyclerView.ViewHolder(imageView)
+    inner class ImageViewHolder(val binding: ImageView) : RecyclerView.ViewHolder(binding)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageViewHolder {
         val imageView= ImageView(parent.context)
@@ -24,6 +24,6 @@ class ImagePagerAdapter(
 
     override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
         val bitmap= BitmapFactory.decodeByteArray(imageBytes[position],0,imageBytes[position].size)
-        holder.imageView.setImageBitmap(bitmap)
+        holder.binding.setImageBitmap(bitmap)
     }
 }

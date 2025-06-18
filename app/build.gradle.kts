@@ -38,6 +38,8 @@ android {
     }
     buildFeatures {
         compose = true
+        dataBinding = true
+        viewBinding=true
     }
 }
 
@@ -64,9 +66,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation ("com.google.android.material:material:1.11.0")
-    implementation ("androidx.room:room-runtime:2.7.1")
-    annotationProcessor  ("androidx.room:room-compiler:2.7.1")
-    implementation ("com.google.firebase:firebase-messaging:24.1.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.room:room-runtime:2.7.1")
+    annotationProcessor("androidx.room:room-compiler:2.7.1")
+    implementation("com.google.firebase:firebase-messaging:24.1.1")
     implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
 }

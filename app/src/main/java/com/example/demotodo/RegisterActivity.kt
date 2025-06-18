@@ -12,125 +12,100 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.ViewModelProvider
 import com.example.demotodo.DAO.UserDao
 import com.example.demotodo.data.AppDatabase
+import com.example.demotodo.databinding.ActivityRegisterBinding
 import com.example.demotodo.model.User
+import com.example.demotodo.reponsitory.UserRepository
+import com.example.demotodo.viewmodel.RegisterViewModel
+import com.example.demotodo.viewmodel.RegisterViewModelFactory
 
 class RegisterActivity : AppCompatActivity() {
     private val DRAWABLE_END = 2
     private var showOffPass = false
     private lateinit var dao: UserDao
+    private lateinit var binding: ActivityRegisterBinding
+    private lateinit var viewModel: RegisterViewModel
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_register)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_register)
+        binding.lifecycleOwner = this
         dao = AppDatabase.getDatabase(this).userDao()
-        val edtName = findViewById<EditText>(R.id.edt_name)
-        val edtPass = findViewById<EditText>(R.id.edt_pass)
-        val edtPassagain = findViewById<EditText>(R.id.edt_pass_again)
-        val btnRegister = findViewById<AppCompatButton>(R.id.btn_register)
-        val tvLogin = findViewById<TextView>(R.id.tv_login)
-        edtPass.setOnTouchListener { _, event ->
+        viewModel = ViewModelProvider(this,RegisterViewModelFactory(application))[RegisterViewModel::class.java]
+        binding.viewModel = viewModel
+        binding.edtPass.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                val drawableEnd = edtPass.compoundDrawables[DRAWABLE_END]
-                if (drawableEnd != null &&
-                    event.rawX >= (edtPass.right - drawableEnd.bounds.width())
-                ) {
+                val drawableEnd = binding.edtPass.compoundDrawables[DRAWABLE_END]
+                if (drawableEnd != null && event.rawX >= (binding.edtPass.right - drawableEnd.bounds.width())) {
                     showOffPass = !showOffPass
-                    showOnPass(edtPass)
-                    edtPass.setSelection(edtPass.text.length)
+                    showOnPass()
+                    binding.edtPass.setSelection(binding.edtPass.text.length)
                     return@setOnTouchListener true
                 }
             }
-            false
+            return@setOnTouchListener false
         }
-        edtPassagain.setOnTouchListener { _, event ->
+        binding.edtPassAgain.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                val drawableEnd = edtPass.compoundDrawables[DRAWABLE_END]
-                if (drawableEnd != null &&
-                    event.rawX >= (edtPass.right - drawableEnd.bounds.width())
-                ) {
+                val drawableEnd = binding.edtPassAgain.compoundDrawables[DRAWABLE_END]
+                if (drawableEnd != null && event.rawX >= (binding.edtPassAgain.right - drawableEnd.bounds.width())) {
                     showOffPass = !showOffPass
-                    showOnPassAgain(edtPassagain)
-                    edtPassagain.setSelection(edtPassagain.text.length)
+                    showOnPass()
+                    binding.edtPassAgain.setSelection(binding.edtPassAgain.text.length)
                     return@setOnTouchListener true
                 }
             }
-            false
+            return@setOnTouchListener false
         }
-        btnRegister.setOnClickListener {
-            val username = edtName.text.toString().trim()
-            val password = edtPass.text.toString().trim()
-            val passagain = edtPassagain.text.toString().trim()
-            if (username.length < 4) {
-                Toast.makeText(this, "Username phải có ít nhất 4 kí tự", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        binding.btnRegister.setOnClickListener {
+            val username= binding.edtName.text.toString().trim()
+            val pass= binding.edtPass.text.toString().trim()
+            val passAgain= binding.edtPassAgain.text.toString().trim()
+            if (username.length<4){
+                Toast.makeText(this,"Username phải có ít nhất 4 kí tự",Toast.LENGTH_SHORT).show()
+            }else if (pass.length<5){
+                Toast.makeText(this,"Mật khẩu phải có ít nhất 5 kí tự",Toast.LENGTH_SHORT).show()
+            }else if (passAgain!=pass){
+                Toast.makeText(this,"Mật khẩu không trùng nhau",Toast.LENGTH_SHORT).show()
+            }else{
+                viewModel.registerUser(username,pass)
             }
-            if (password.length < 6) {
-                Toast.makeText(this, "Password phải có ít nhất 6 kí tự", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            } else if (passagain != password) {
-                Toast.makeText(this, "Password phải giống nhau", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val user = User(username = username, password = password)
-            try {
-                dao.insertUser(user)
-                Toast.makeText(this, "Đăng kí thành công...", Toast.LENGTH_SHORT).show()
-                finish()
-
-            } catch (e: Exception) {
-                Toast.makeText(this, "Tên người dùng đã tồn tại...", Toast.LENGTH_SHORT).show()
+            viewModel.registerResult.observe(this){success->
+                if (success){
+                    Toast.makeText(this,"Đăng kí thành công",Toast.LENGTH_SHORT).show()
+                    finish()
+                }else{
+                    Toast.makeText(this,"Tên người dùng đã tồn tại",Toast.LENGTH_SHORT).show()
+                }
             }
         }
-        tvLogin.setOnClickListener {
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
+        binding.tvLogin.setOnClickListener {
+            startActivity(Intent(this, LoginActivity::class.java))
         }
     }
 
-    private fun showOnPass(edtPass: EditText) {
-        if (showOffPass) {
-            edtPass.inputType =
-                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-            edtPass.setCompoundDrawablesWithIntrinsicBounds(
-                null,
-                null,
-                ContextCompat.getDrawable(this, R.drawable.ic_eye_open),
-                null
-            )
+    private fun showOnPass() {
+        val drawable = if (showOffPass) {
+            R.drawable.ic_eye_open
         } else {
-            edtPass.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            edtPass.setCompoundDrawablesWithIntrinsicBounds(
-                null,
-                null,
-                ContextCompat.getDrawable(this, R.drawable.ic_eye_close),
-                null
-            )
+            R.drawable.ic_eye_close
         }
+        binding.edtPass.inputType = if (showOffPass) {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+        } else {
+            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        binding.edtPass.setCompoundDrawablesWithIntrinsicBounds(
+            null,
+            null,
+            ContextCompat.getDrawable(this, drawable),
+            null
+        )
     }
 
-    private fun showOnPassAgain(edtPassagain: EditText) {
-        if (showOffPass) {
-            edtPassagain.inputType =
-                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-            edtPassagain.setCompoundDrawablesWithIntrinsicBounds(
-                null,
-                null,
-                ContextCompat.getDrawable(this, R.drawable.ic_eye_open),
-                null
-            )
-        } else {
-            edtPassagain.inputType =
-                InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            edtPassagain.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                null,
-                null,
-                ContextCompat.getDrawable(this, R.drawable.ic_eye_close),
-                null
-            )
-        }
-    }
 }
