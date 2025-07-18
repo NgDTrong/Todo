@@ -31,55 +31,54 @@
         </activity>
         <activity
             android:name=".TodoActivity"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
+            android:exported="true"
+            tools:ignore="AppLinkUrlError">
+
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <!-- Accepts URIs that begin with "http://www.example.com/gizmos” -->
-                <data
-                    android:host="open.my.app"
-                    android:pathPrefix="/todo"
-                    android:scheme="app" />
+                <data android:scheme="todo" />
                 <!-- note that the leading "/" is required for pathPrefix -->
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with "example://gizmos” -->
-                <data
-                    android:host="todo"
-                    android:scheme="todoapp" />
-            </intent-filter>
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <!-- Accepts URIs that begin with "example://gizmos” -->
+            <data
+                android:host="todo"
+                android:scheme="todoapp" />
+        </intent-filter>
         </activity>
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-        <activity
-            android:name=".InforDetailActivity"
-            android:exported="false" />
+    <activity
+        android:name=".RegisterActivity"
+        android:exported="false" />
+    <activity
+        android:name=".MainActivity"
+        android:exported="false" />
+    <activity
+        android:name=".InforDetailActivity"
+        android:exported="false" />
 
-        <service
-            android:name=".service.MyFirebaseMessagingService"
-            android:exported="false"
-            tools:ignore="MissingClass">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+    <service
+        android:name=".service.MyFirebaseMessagingService"
+        android:exported="false"
+        tools:ignore="MissingClass">
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+    </service>
 
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/ic_launcher_foreground" />
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/purple_200" />
-    </application>
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_launcher_foreground" />
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@color/purple_200" />
+</application>
 
-</manifest>
+    </manifest>
